@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+
+  <script src="https://cesiumjs.org/releases/1.55/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesiumjs.org/releases/1.55/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+
+<!--  
+  <link rel="stylesheet" href="../Build/Cesium/Widgets/widgets.css" />
+  <script src="../Build/Cesium/Cesium.js"></script>
+-->  
+  <script src="keys.js"></script>
+  <script src="index.js"></script>
+  <!--
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/5.6.0/math.js" type="text/javascript"></script>
+  -->
+    
+  <style>
+		/* Background Cesium content */
+		#cesiumContainer {
+			position: absolute;
+			top: 0;
+			left: 0;
+			height: 100%;
+			width: 100%;
+			margin: 0;
+			overflow: hidden;        
+			padding: 0;
+			font-family: sans-serif;
+		}	  
+    
+		/* Table of candidate vehicles */
+		#infoDiv {
+			background: rgba(42,42,42,0.9);
+			padding: 4px;
+			border-radius: 4px;
+			position: absolute;
+			top: 30px;
+			left: 4px;
+			// width: 200px;
+			max-height: 460px;
+			overflow-y: auto;
+			z-index: 4;	
+			display: inline-block;	
+			color: white;
+		}
+
+		#buttonDiv {
+			position: absolute;		
+			// background: rgba(42,42,42,0.8);
+			padding: 4px;
+			border-radius: 4px;
+			// width: 60%;
+			top: 5px;
+			left: 4px;
+			// height: 50px;
+			/*margin-left: auto;
+			margin-right: auto;*/
+			text-align: center;
+			display: inline-block;
+			// white-space: pre;
+		}  	
+  </style>
+
+  
+</head>
+<body>
+  <div id="cesiumContainer" class="fullsize"></div>
+
+  <div id="infoDiv">
+  	<!-- <input type="textarea" name="myTextarea"></input> -->
+  </div>
+
+  <div id="buttonDiv">
+  	<button onClick="dropPin()">Drop Pin</button>
+  </div>
+  
+    
+  <!-- <script src="camera_practice.js" type="text/javascript"></script> -->
+
+  <script type="text/javascript">
+
+
+	// var cesiumTerrainProvider = Cesium.createWorldTerrain();
+	var cesiumTerrainProvider = new Cesium.CesiumTerrainProvider({
+        url : Cesium.IonResource.fromAssetId(1),
+        requestVertexNormals : true
+    });
+    
+
+	var viewer = new Cesium.Viewer('cesiumContainer', {
+		infoBox : false,
+		vrButton: true,
+		animation : true,
+		timeline : true,
+		geocoder : false,
+		homeButton : false,
+		infoBox : true,
+		sceneModePicker : false,
+		navigationHelpButton : false,
+		imageryProvider : false,
+		//imageryProvider: false,
+		//baseLayerPicker: false,
+		navigationInstructionsInitiallyVisible : false,  //,
+		terrainProvider : cesiumTerrainProvider		// Cesium.createWorldTerrain()  	FIXME -- This is making our targets appear underground.  We need to specify altMSL.
+	});
+	viewer.extend(Cesium.viewerDragDropMixin);
+	var scene = viewer.scene;
+	let canvas = scene.canvas  
+	
+	
+	// Load Pins:
+	var pinBuilder = new Cesium.PinBuilder();
+
+	// Initialize pin counter:
+	var pinNumber = 0;
+	
+	// Initialize text string for pin location info:
+	var pinInfoString = 'lon, lat, alt';
+	
+	var sensorPos = new Cesium.Cartesian3.fromDegrees(-105.648237597918, 38.58545979130145, 3500);
+
+
+	// lon and lat have been hard-coded to match the points in the sampleHeights() function.
+	// alt of 5000 meters was just a guess.
+	scene.camera.setView({
+		destination : sensorPos,
+		orientation: {
+			heading : 0.0,
+			pitch : -Cesium.Math.PI_OVER_TWO,
+			roll : 0.0
+		}
+	});
+
+	
+	
+	function dropPin()  {
+		/* Click on a point and get lat, lon, alt */
+
+		// Define mouse event handlers
+		var h1 = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+		var h2 = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+
+		// Enable crosshair cursor:
+		document.getElementById('cesiumContainer').style.cursor = 'crosshair';
+	
+		// Define a temporary label for mouse movement
+		var tmpLatLonLabel = viewer.entities.add({
+			label : {
+				show : false,
+				showBackground : true,
+				font : '10px monospace',
+				horizontalOrigin : Cesium.HorizontalOrigin.LEFT,
+				verticalOrigin : Cesium.VerticalOrigin.TOP,
+				pixelOffset : new Cesium.Cartesian2(15, 0)
+			}
+		});
+
+		var userLon;
+		var userLat;
+		var userAlt = 0.0;
+		var cartographic;
+		h1.setInputAction(function(movement) {
+			// We use `viewer.scene.pickPosition` here instead of `viewer.camera.pickEllipsoid` so that
+			// we get the correct point when mousing over terrain.
+			// var earthPosition = viewer.scene.pickPosition(event.position);
+			// `earthPosition` will be undefined if our mouse is not over the globe.
+			var cartesian = viewer.scene.pickPosition(movement.endPosition);
+			if (Cesium.defined(cartesian)) {
+				cartographic = Cesium.Cartographic.fromCartesian(cartesian);
+				userLon = Cesium.Math.toDegrees(cartographic.longitude);
+				userLat = Cesium.Math.toDegrees(cartographic.latitude);
+				tmpLatLonLabel.position = cartesian;
+				tmpLatLonLabel.label.show = true;
+				tmpLatLonLabel.label.text =
+					'Lon: ' + userLon.toFixed(4) + '\u00B0' +
+					'\nLat: ' + userLat.toFixed(4) + '\u00B0';
+				tmpLatLonLabel.label.eyeOffset = new Cesium.Cartesian3(0.0, 0.0, -cartographic.height * (viewer.scene.mode === Cesium.SceneMode.SCENE2D ? 1.5 : 1.0));
+			} else {
+				tmpLatLonLabel.label.show = false;
+			}
+		}, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+
+		h2.setInputAction(function(click) {
+			h1 = h1 && h1.destroy();
+			h2 = h2 && h2.destroy();
+
+			// Find the alt at this position
+			var clickedPosition = [Cesium.Cartographic.fromDegrees(userLon, userLat)];
+			var promise = Cesium.sampleTerrainMostDetailed(viewer.terrainProvider, clickedPosition);
+			Cesium.when(promise, function(updatedPosition) {
+				// clickedPosition[0].height has been updated.
+				// updatedPosition is just a reference to clickedPosition.
+				// console.log("After:" + clickedPosition[0].height);
+				userAlt = clickedPosition[0].height;
+			});
+
+			promise.then(function() {
+				// NOTE:  The promise above takes some time to resolve.
+
+				// Return cursor to default
+				document.getElementById('cesiumContainer').style.cursor = 'default';
+
+				// Delete the temporary label:
+				viewer.entities.remove(tmpLatLonLabel);
+				// tmpLatLonLabel.label.show = false;
+
+				// Write info to console for copy/paste:
+				console.log('(lon, lat, alt) = (' + userLon + ', ' + userLat + ', ' + userAlt +')');
+			
+				// Add a pin to the map
+				pinNumber += 1;
+				viewer.entities.add({
+					name : '',
+					position : Cesium.Cartesian3.fromDegrees(userLon, userLat, userAlt),
+					description : 'lon : ' + userLon + '&deg; <BR>' +
+								  'lat : ' + userLat + '&deg; <BR>' + 
+								  'alt : ' + userAlt + ' meters',    
+					billboard : {
+						image : pinBuilder.fromText(pinNumber, Cesium.Color.RED, 38).toDataURL(),         verticalOrigin : Cesium.VerticalOrigin.BOTTOM
+					}
+				});
+
+				// Add an entry to our table:
+				pinInfoString = pinInfoString + '\r\n' + pinNumber + ': ' + userLon + ', ' + userLat + ', ' + userAlt;
+				
+				document.getElementById("infoDiv").innerText = pinInfoString;
+				
+/*
+				// Add a dot with a label:
+				viewer.entities.add({
+					name : 'Location with altitude',
+					position : Cesium.Cartesian3.fromDegrees(userLon, userLat, userAlt),
+					description : 'lon : ' + userLon + '&deg; <BR>' +
+								  'lat : ' + userLat + '&deg; <BR>' + 
+								  'alt : ' + userAlt + ' meters',
+					ellipsoid : {
+						radii : new Cesium.Cartesian3(4.0, 4.0, 4.0),
+						material : Cesium.Color.RED
+					}, 
+					label : {
+						text :  'Lon: ' + userLon + '\u00B0' +
+								'\nLat: ' + userLat + '\u00B0' +
+								'\nAlt: ' + userAlt + ' meters',
+						show : true,
+						showBackground : true,
+						font : '10px monospace',
+						horizontalOrigin : Cesium.HorizontalOrigin.LEFT,
+						verticalOrigin : Cesium.VerticalOrigin.TOP,
+						pixelOffset : new Cesium.Cartesian2(15, 0),
+						eyeOffset : new Cesium.Cartesian3(0.0, 0.0, -cartographic.height * (viewer.scene.mode === Cesium.SceneMode.SCENE2D ? 2.0 : 1.5))					
+					}					
+				});
+*/				
+				
+			});		
+		}, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+	}
+	
+	
+  </script>
+  
+</body>
+</html>
