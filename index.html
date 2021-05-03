@@ -38,11 +38,14 @@
 			padding: 4px;
 			border-radius: 4px;
 			position: absolute;
-			top: 30px;
+			width: 50%;
+			top: 60px;
 			left: 4px;
 			/*width: 200px;*/
-			max-height: 460px;
+			/*max-height: 460px;*/
+			height: 50px;
 			overflow-y: auto;
+			text-align: 'center';
 			z-index: 4;	
 			display: inline-block;	
 			color: white;
@@ -77,12 +80,18 @@
 	<button onClick="getStartingLocation()">Click to Start</button>
   </div>
 
+
   <!-- <script src="camera_practice.js" type="text/javascript"></script> -->
 
   <script type="text/javascript">
   
-	var startLocation = {lat:42.99981911246973, lon:-78.7891529772581};
-	
+	var userLocation = {lat:42.99981911246973, lon:-78.7891529772581};
+	var watchId, watchPositionOptions;
+	watchPositionOptions = {
+		enableHighAccuracy: false,
+		timeout: 5000,
+		maximumAge: 0
+	};
 	// var cesiumTerrainProvider = Cesium.createWorldTerrain();
 	var cesiumTerrainProvider = new Cesium.CesiumTerrainProvider({
 		url : Cesium.IonResource.fromAssetId(1),
@@ -119,12 +128,12 @@
 	var pinInfoString = 'lon, lat, alt';
 	
 	var sensorPos = new Cesium.Cartesian3.fromDegrees(-105.648237597918, 38.58545979130145, 3500);
-	console.log(startLocation.lat);
-	console.log(startLocation.lon);
+	console.log(userLocation.lat);
+	console.log(userLocation.lon);
 	// lon and lat have been hard-coded to match the points in the sampleHeights() function.
 	// alt of 5000 meters was just a guess.
 	scene.camera.setView({
-		destination : Cesium.Cartesian3.fromDegrees(startLocation.lon, startLocation.lat, 5000), //sensorPos,
+		destination : Cesium.Cartesian3.fromDegrees(userLocation.lon, userLocation.lat, 5000), //sensorPos,
 		orientation: {
 			heading : 0.0,
 			pitch : -Cesium.Math.PI_OVER_TWO,
@@ -132,34 +141,48 @@
 		}
 	});
 
+	function error(err) {
+		console.warn('ERROR(' + err.code + '): ' + err.message);
+	}
+
 	function getStartingLocation() {
 		if (navigator.geolocation) {
-			navigator.geolocation.getCurrentPosition(userLocation, userLocationDeclined);
+			// watchId = navigator.geolocation.watchPosition(success, error, options);
+			navigator.geolocation.getCurrentPosition(userStartingLocation, userLocationDeclined);
 		} else { 
 			alert("Geolocation is not supported by this browser.");
 		}
 	}
-	function userLocation(position) {
-		startLocation.lat = position.coords.latitude;
-		startLocation.lon = position.coords.longitude;
+	function userStartingLocation(position) {
+		userLocation.lat = position.coords.latitude;
+		userLocation.lon = position.coords.longitude;
 		if(position.coords.latitude){
 			console.log('Using user position');
 		}
 		scene.camera.setView({
-			destination : Cesium.Cartesian3.fromDegrees(startLocation.lon, startLocation.lat, 5000),
+			destination : Cesium.Cartesian3.fromDegrees(userLocation.lon, userLocation.lat, 6000),
 			orientation: {
 				heading : 0.0,
 				pitch : -Cesium.Math.PI_OVER_TWO,
 				roll : 0.0
 			}
 		});
+		watchId = navigator.geolocation.watchPosition(userDynamicLocation, error, watchPositionOptions);
 	}
 
 	function userLocationDeclined() {
-		// startLocation.lat = 42.99981911246973;
-		// startLocation.lon = -78.7891529772581;
+		// userLocation.lat = 42.99981911246973;
+		// userLocation.lon = -78.7891529772581;
 		alert("The initial location has been defaulted.");
 	}
+
+	function userDynamicLocation(position){
+		userLocation.lat = position.coords.latitude;
+		userLocation.lon = position.coords.longitude;
+		document.getElementById('infoDiv').innerHTML = "lat: " + userLocation.lat + " lon: " + userLocation.lon;
+		//console.log([userLocation.lat, userLocation.lon]);
+	}
+
 // 	function dropPin()  {
 // 		/* Click on a point and get lat, lon, alt */
 
