@@ -13,14 +13,13 @@
       href="https://cesium.com/downloads/cesiumjs/releases/1.67/Build/Cesium/Widgets/widgets.css"
       rel="stylesheet"
     />
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
     <!--
   <link rel="stylesheet" href="../Build/Cesium/Widgets/widgets.css" />
   <script src="../Build/Cesium/Cesium.js"></script>
 -->
     <script src="keys.js"></script>
-    <script src="scripts/decoder.js"></script>
-    <script src="scripts/here_functions.js"></script>
+    <script src="index.js"></script>
     <!--
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/5.6.0/math.js" type="text/javascript"></script>
   -->
@@ -43,8 +42,8 @@
 
       /* Table of candidate vehicles */
       .infoDiv {
-        background: rgba(194, 195, 197, 0.87);
-        /*background: #d3d3d3;*/
+        /* background: rgba(42, 42, 42, 0.9); */
+        background: #d3d3d3;
         padding: 25px 40px 25px 40px;
         border-radius: 10px;
         position: absolute;
@@ -66,8 +65,8 @@
       }
 
       .blueDiv {
-        background: rgba(89, 176, 243, 0.7);
-        /*background: #54a4da;*/
+        /* background: rgba(42, 42, 42, 0.9); */
+        background: #54a4da;
         padding: 25px 40px 25px 40px;
         border-radius: 10px;
         position: absolute;
@@ -166,7 +165,7 @@
         <button class="buttoninfoDiv">Clear Pin</button>
         <button class="buttoninfoDiv">Enter</button>
         <button class="buttoninfoDiv">Previous</button>
-        <button class="buttoninfoDiv" onClick="getRouteToDestination()">Get Route</button>
+        <button class="buttoninfoDiv">Get Route</button>
       </div>
     </div>
 
@@ -175,7 +174,7 @@
 
 <div class="blueDiv" id="drawRouteDiv" hidden>
   <div class="child">
-    <button class="buttoninfoDiv" onClick="backToSelectDest()">Previous</button>
+    <button class="buttoninfoDiv">Previous</button>
     <button class="buttoninfoDiv">Search Along Route</button>
   </div>
 </div>
@@ -187,7 +186,7 @@
 
     <input type="text" class="form-control" placeholder="Search along the route" id="first"><br>
     <button class="buttoninfoDiv">Enter</button>
-    <button class="buttoninfoDiv" onClick="">Previous</button>
+    <button class="buttoninfoDiv">Previous</button>
     <button class="buttoninfoDiv">Get new Route</button>
   </div>
 </div>
@@ -201,12 +200,9 @@
     <!-- <script src="camera_practice.js" type="text/javascript"></script> -->
 
     <script type="text/javascript">
-      var userLocation = {lat: 42.99981911246973, lon: -78.7891529772581 };
+      var userLocation = { lat: 42.99981911246973, lon: -78.7891529772581 };
       var watchId, watchPositionOptions;
-      var userModel, startPin, destPin;
-      var destLatLon = {lat: 0, lon: 0};
-      var destSelected = 0;
-
+      var userModel;
       watchPositionOptions = {
         enableHighAccuracy: false,
         timeout: 5000,
@@ -252,45 +248,21 @@
         38.58545979130145,
         3500
       );
-      // console.log(userLocation.lat);
-      // console.log(userLocation.lon);
+      console.log(userLocation.lat);
+      console.log(userLocation.lon);
       // lon and lat have been hard-coded to match the points in the sampleHeights() function.
       // alt of 5000 meters was just a guess.
       scene.camera.setView({
         destination: Cesium.Cartesian3.fromDegrees(
           userLocation.lon,
           userLocation.lat,
-          2000
+          5000
         ), //sensorPos,
         orientation: {
           heading: 0.0,
           pitch: -Cesium.Math.PI_OVER_TWO,
           roll: 0.0,
         },
-      });
-      //var mouseLon, mouseLat;
-      //var lastLon, lastLat;
-      var clickLon, clickLat;
-      // tmpLatLonLabel = viewer.entities.add({
-      //   label : {
-      //     show : false,
-      //     showBackground : true,
-      //     font : '10px monospace',
-      //     horizontalOrigin : Cesium.HorizontalOrigin.LEFT,
-      //     verticalOrigin : Cesium.VerticalOrigin.TOP,
-      //     pixelOffset : new Cesium.Cartesian2(15, 0)
-      //   }
-      // });
-
-      routePolyline = viewer.entities.add({
-        name : 'Route',
-        polyline : {
-          positions : undefined,
-          material : Cesium.Color.ROYALBLUE.withAlpha(0.8),
-          width : 5,
-          clampToGround : true,
-        },
-        show : false
       });
 
       function error(err) {
@@ -309,39 +281,63 @@
         } else {
           alert("Geolocation is not supported by this browser.");
         }
-        selectDestination();
-      };
 
-      function selectDestination(){
+        var mouseLon, mouseLat;
+        var lastLon, lastLat;
+
+        tmpLatLonLabel = viewer.entities.add({
+          label : {
+            show : false,
+            showBackground : true,
+            font : '10px monospace',
+            horizontalOrigin : Cesium.HorizontalOrigin.LEFT,
+            verticalOrigin : Cesium.VerticalOrigin.TOP,
+            pixelOffset : new Cesium.Cartesian2(15, 0)
+          }
+        });
+        h1 = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+        h1.setInputAction(function(movement) {
+            //  if (Cesium.defined(mousePosition)) {
+            var mousePosition = viewer.scene.pickPosition(movement.endPosition);
+            //console.log(mousePosition);
+            var cartoMouse = Cesium.Cartographic.fromCartesian(mousePosition);
+            mouseLon = Cesium.Math.toDegrees(cartoMouse.longitude);
+            mouseLat = Cesium.Math.toDegrees(cartoMouse.latitude);
+            tmpLatLonLabel.position = mousePosition;
+            tmpLatLonLabel.label.show = true;
+            tmpLatLonLabel.label.text =
+              'Lon: ' + mouseLon.toFixed(4) + '\u00B0' +
+              '\nLat: ' + mouseLat.toFixed(4) + '\u00B0';
+            tmpLatLonLabel.label.eyeOffset = new Cesium.Cartesian3(0.0, 0.0, -cartoMouse.height * (viewer.scene.mode === Cesium.SceneMode.SCENE2D ? 1.5 : 1.0));
+          // }
+        }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+    
+
         h2 = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
-        h2.mouseEmulationIgnoreMilliseconds = 300;
         
         h2.setInputAction(function(click) {
-          var clickPosition = viewer.scene.pickPosition(click.position);
-          var cartoClick = Cesium.Cartographic.fromCartesian(clickPosition);
-          destLatLon.lon = Cesium.Math.toDegrees(cartoClick.longitude);
-          destLatLon.lat = Cesium.Math.toDegrees(cartoClick.latitude);
-          console.log(destLatLon);
-          if(destPin === undefined){
-            destPin = Cesium.when(
-              pinBuilder.fromUrl("/~dowonlee/670/checkered-flag.png", Cesium.Color.BLACK, 48),
-              function (canvas) {
-                return viewer.entities.add({
-                  name: "destination",
-                  position: Cesium.Cartesian3.fromDegrees(destLatLon.lon, destLatLon.lat),
-                  billboard: {
-                    image: canvas.toDataURL(),
-                    verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-                    heightReference : Cesium.HeightReference.RELATIVE_TO_GROUND
-                  },
-                });
-              }
-            );
-          }else{
-            destPin.position = Cesium.Cartesian3.fromDegrees(destLatLon.lon, destLatLon.lat);
-          }
+        //  lonlatArray.push(mouseLon, mouseLat);
+		    // 	latLonPositions.push([mouseLat, mouseLon]);
+		      lastLon = mouseLon;
+		      lastLat = mouseLat;
+          //var url = Cesium.buildModuleUrl("/~dowonlee/670/checkered-flag.png");
+          var groceryPin = Cesium.when(
+            pinBuilder.fromUrl("/~dowonlee/670/checkered-flag.png", Cesium.Color.BLACK, 48),
+            function (canvas) {
+              return viewer.entities.add({
+                name: "Destination",
+                position: Cesium.Cartesian3.fromDegrees(lastLon, lastLat),
+                billboard: {
+                  image: canvas.toDataURL(),
+                  verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                  heightReference : Cesium.HeightReference.RELATIVE_TO_GROUND
+                },
+              });
+            }
+          );
         }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
-      }
+
+      };
 
       function userStartingLocation(position) {
         userLocation.lat = position.coords.latitude;
@@ -351,7 +347,7 @@
         }
         startPin = viewer.entities.add({
           name: "startPin",
-          position: Cesium.Cartesian3.fromDegrees(userLocation.lon, userLocation.lat),
+          position: Cesium.Cartesian3.fromDegrees(position.coords.longitude, position.coords.latitude),
           billboard: {
             image: pinBuilder.fromText("start", Cesium.Color.ROYALBLUE, 48).toDataURL(),
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
@@ -369,6 +365,8 @@
           },
           show: true
         });
+
+
         // currentPin = viewer.entities.add({
         //   name: "currentPin",
         //   position: Cesium.Cartesian3.fromDegrees(position.coords.longitude, position.coords.latitude),
@@ -379,11 +377,12 @@
         //   },
         // });
         //viewer.trackedEntity = currentPin;
+
         scene.camera.setView({
           destination: Cesium.Cartesian3.fromDegrees(
             userLocation.lon,
             userLocation.lat,
-            2000
+            6000
           ),
           orientation: {
             heading: 0.0,
@@ -404,7 +403,7 @@
         alert("The initial location has been defaulted.");
         startPin = viewer.entities.add({
           name: "startPin",
-          position: Cesium.Cartesian3.fromDegrees(userLocation.lon, userLocation.lat),
+          position: Cesium.Cartesian3.fromDegrees(position.coords.longitude, position.coords.latitude),
           billboard: {
             image: pinBuilder.fromText("start", Cesium.Color.ROYALBLUE, 48).toDataURL(),
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
@@ -441,29 +440,8 @@
         // document.getElementById("infoDiv").innerHTML =
         //   "lat: " + userLocation.lat + " lon: " + userLocation.lon;
         //console.log([userLocation.lat, userLocation.lon]);
-      };
-
-      function getRouteToDestination(){
-        document.getElementById('selectDestDiv').style.display = 'none';
-        document.getElementById('drawRouteDiv').style.display = 'block';
-        var lonLatArray = [];
-        let [status, routeline, routelength] = getRoadRouteHere([userLocation.lat, userLocation.lon], [destLatLon.lat, destLatLon.lon]);
-				//routelength = routelength.toFixed(2);
-        if(status){
-          for(i=0; i<routeline.length; i++){
-            lonLatArray.push(routeline[i][1], routeline[i][0]);
-          }
-          routePolyline.polyline.positions = Cesium.Cartesian3.fromDegreesArray(lonLatArray);
-          routePolyline.show = true;
-        }
-      };
-
-      function backToSelectDest() {
-        document.getElementById('selectDestDiv').style.display = 'block';
-        document.getElementById('drawRouteDiv').style.display = 'none';
-        routePolyline.show = false;
-        selectDestination();
       }
+
       // 	function dropPin()  {
       // 		/* Click on a point and get lat, lon, alt */
 
