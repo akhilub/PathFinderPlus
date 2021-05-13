@@ -151,10 +151,15 @@
       <div class="child">
         <h3>Find landmarks on your route</h3>
         <h4>To select initial location</h4>
-        <button class="buttoninfoDiv">Click here to select manually</button>
-        <button class="buttoninfoDiv" onClick="getStartingLocation()">
-          Click here to get your current location
-        </button>
+        <button class="buttoninfoDiv" onClick="manualUserLocation()">Click here to select manually</button>
+        <button class="buttoninfoDiv" onClick="getStartingLocation(1)">Click here to get your current location</button>
+        <button class="buttoninfoDiv" onClick="getStartingLocation(0)">Default Location</button>
+      </div>
+    </div>
+    <div class="blueDiv" id="manualUserLocationDiv" hidden>
+      <h4>Click on the map to select your starting position. Click Next to proceed</h4>
+      <div class="child">
+        <button class="buttoninfoDiv" onClick="openDestinationSelect()">Next</button>
       </div>
     </div>
 
@@ -163,9 +168,8 @@
       <div class="child">
 
         <input type="text" class="form-control" placeholder="Type Destination" id="first"><br>
-        <button class="buttoninfoDiv">Clear Pin</button>
-        <button class="buttoninfoDiv">Enter</button>
         <button class="buttoninfoDiv">Previous</button>
+        <button class="buttoninfoDiv">Enter</button>
         <button class="buttoninfoDiv" onClick="getRouteToDestination()">Get Route</button>
       </div>
     </div>
@@ -176,7 +180,7 @@
 <div class="blueDiv" id="drawRouteDiv" hidden>
   <div class="child">
     <button class="buttoninfoDiv" onClick="backToSelectDest()">Previous</button>
-    <button class="buttoninfoDiv">Search Along Route</button>
+    <button class="buttoninfoDiv" onClick="goToSearchLandmark()">Search Along Route</button>
   </div>
 </div>
 
@@ -184,11 +188,16 @@
 
 <div class="blueDiv" id="searchLandmarkDiv" hidden>
   <div class="child">
-
-    <input type="text" class="form-control" placeholder="Search along the route" id="first"><br>
-    <button class="buttoninfoDiv">Enter</button>
+    <h3>Intermediate Location</h3>
+    <input type="text" class="form-control" placeholder="Search along the route" id="searchPlaceText"><br>
     <button class="buttoninfoDiv" onClick="">Previous</button>
-    <button class="buttoninfoDiv">Get new Route</button>
+    <select id="searchWidth" class="dropdown" onChange="updateCorrdior();" title="Search Distance From Route">
+      <option value="">--Select Distance Off Route--</option>
+      <option value="200">200 Meters</option>
+      <option value="500">500 Meters</option>
+      <option value="1000">1000 Meters</option>
+    </select>
+    <button class="buttoninfoDiv" onClick="searchPlace()">Enter</button>
   </div>
 </div>
 
@@ -205,7 +214,11 @@
       var watchId, watchPositionOptions;
       var userModel, startPin, destPin;
       var destLatLon = {lat: 0, lon: 0};
+      var lonLatArray = [];
       var destSelected = 0;
+      var routeCode;
+      var searchPlaceEntities = {};
+      var h1;
 
       watchPositionOptions = {
         enableHighAccuracy: false,
@@ -293,24 +306,48 @@
         show : false
       });
 
+      routeCorridor = viewer.entities.add({
+        name : 'Corridor',
+        corridor : {
+          positions : undefined,
+          material : Cesium.Color.ALICEBLUE.withAlpha(0.5),
+          width : 200,
+          clampToGround : true,
+        },
+        show : false
+      });
+
       function error(err) {
         console.warn("ERROR(" + err.code + "): " + err.message);
       }
 
-      function getStartingLocation() {
-        document.getElementById('myInfoDiv').style.display = "none";
-        document.getElementById('selectDestDiv').style.display = "block";
-        if (navigator.geolocation) {
+      function getStartingLocation(locationType) {
+        if (locationType == 1){
+          if(navigator.geolocation) {
           // watchId = navigator.geolocation.watchPosition(success, error, options);
           navigator.geolocation.getCurrentPosition(
             userStartingLocation,
             userLocationDeclined
           );
-        } else {
-          alert("Geolocation is not supported by this browser.");
+          }else {
+            alert("Geolocation is not supported by this browser.");
+          }
+          selectDestination();
+        }else{
+          userLocationDeclined();
+        }
+        openDestinationSelect();
+      };
+
+      function openDestinationSelect(){
+        document.getElementById('myInfoDiv').style.display = "none";
+        document.getElementById('selectDestDiv').style.display = "block";
+        document.getElementById('manualUserLocationDiv').style.display = "none";
+        if (h1 !== undefined){
+          h1 = h1 && h1.destroy();
         }
         selectDestination();
-      };
+      }
 
       function selectDestination(){
         h2 = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
@@ -323,10 +360,10 @@
           destLatLon.lat = Cesium.Math.toDegrees(cartoClick.latitude);
           console.log(destLatLon);
           if(destPin === undefined){
-            destPin = Cesium.when(
-              pinBuilder.fromUrl("/~dowonlee/670/checkered-flag.png", Cesium.Color.BLACK, 48),
+            Cesium.when(
+              pinBuilder.fromUrl("checkered-flag.png", Cesium.Color.BLACK, 60),
               function (canvas) {
-                return viewer.entities.add({
+                destPin = viewer.entities.add({
                   name: "destination",
                   position: Cesium.Cartesian3.fromDegrees(destLatLon.lon, destLatLon.lat),
                   billboard: {
@@ -349,26 +386,7 @@
         if (position.coords.latitude) {
           console.log("Using user position");
         }
-        startPin = viewer.entities.add({
-          name: "startPin",
-          position: Cesium.Cartesian3.fromDegrees(userLocation.lon, userLocation.lat),
-          billboard: {
-            image: pinBuilder.fromText("start", Cesium.Color.ROYALBLUE, 48).toDataURL(),
-            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-            heightReference : Cesium.HeightReference.RELATIVE_TO_GROUND
-          },
-        });
-        userModel = viewer.entities.add({
-          position : Cesium.Cartesian3.fromDegrees(userLocation.lon, userLocation.lat),
-          billboard : {
-            image : '/~dowonlee/670/red-circle.png',
-            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-            heightReference : Cesium.HeightReference.RELATIVE_TO_GROUND,
-            width : 64,
-            height : 64
-          },
-          show: true
-        });
+        setUpStartingObjects();
         // currentPin = viewer.entities.add({
         //   name: "currentPin",
         //   position: Cesium.Cartesian3.fromDegrees(position.coords.longitude, position.coords.latitude),
@@ -396,17 +414,14 @@
           error,
           watchPositionOptions
         );
-      }
+      };
 
-      function userLocationDeclined() {
-        // userLocation.lat = 42.99981911246973;
-        // userLocation.lon = -78.7891529772581;
-        alert("The initial location has been defaulted.");
+      function setUpStartingObjects(){
         startPin = viewer.entities.add({
           name: "startPin",
           position: Cesium.Cartesian3.fromDegrees(userLocation.lon, userLocation.lat),
           billboard: {
-            image: pinBuilder.fromText("start", Cesium.Color.ROYALBLUE, 48).toDataURL(),
+            image: pinBuilder.fromText("start", Cesium.Color.ROYALBLUE, 60).toDataURL(),
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
             heightReference : Cesium.HeightReference.RELATIVE_TO_GROUND
           },
@@ -414,7 +429,7 @@
         userModel = viewer.entities.add({
           position : Cesium.Cartesian3.fromDegrees(userLocation.lon, userLocation.lat),
           billboard : {
-            image : '/~dowonlee/670/red-circle.png',
+            image : 'red-circle.png',
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
             heightReference : Cesium.HeightReference.RELATIVE_TO_GROUND,
             width : 64,
@@ -422,6 +437,13 @@
           },
           show: true
         });
+      };
+
+      function userLocationDeclined() {
+        // userLocation.lat = 42.99981911246973;
+        // userLocation.lon = -78.7891529772581;
+        alert("The initial location has been defaulted.");
+        setUpStartingObjects();
         // currentPin = viewer.entities.add({
         //   name: "currentPin",
         //   position: Cesium.Cartesian3.fromDegrees(position.coords.longitude, position.coords.latitude),
@@ -431,6 +453,18 @@
         //       heightReference : Cesium.HeightReference.RELATIVE_TO_GROUND
         //     },
         // });
+        scene.camera.setView({
+            destination: Cesium.Cartesian3.fromDegrees(
+              userLocation.lon,
+              userLocation.lat,
+              2000
+            ),
+            orientation: {
+              heading: 0.0,
+              pitch: -Cesium.Math.PI_OVER_TWO,
+              roll: 0.0,
+            },
+          });
       };
 
       function userDynamicLocation(position) {
@@ -443,11 +477,49 @@
         //console.log([userLocation.lat, userLocation.lon]);
       };
 
+      function manualUserLocation(){
+        document.getElementById('myInfoDiv').style.display = 'none';
+        document.getElementById('manualUserLocationDiv').style.display = 'block';
+
+        h1 = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+        h1.mouseEmulationIgnoreMilliseconds = 300;
+        
+        h1.setInputAction(function(click) {
+          var clickPosition = viewer.scene.pickPosition(click.position);
+          var cartoClick = Cesium.Cartographic.fromCartesian(clickPosition);
+          userLocation.lon = Cesium.Math.toDegrees(cartoClick.longitude);
+          userLocation.lat = Cesium.Math.toDegrees(cartoClick.latitude);
+          console.log(userLocation);
+          if(startPin === undefined){
+            setUpStartingObjects();
+          }else{
+            startPin.position = Cesium.Cartesian3.fromDegrees(userLocation.lon, userLocation.lat);
+            userModel.position = Cesium.Cartesian3.fromDegrees(userLocation.lon, userLocation.lat);
+          }
+          
+          scene.camera.setView({
+            destination: Cesium.Cartesian3.fromDegrees(
+              userLocation.lon,
+              userLocation.lat,
+              2000
+            ),
+            orientation: {
+              heading: 0.0,
+              pitch: -Cesium.Math.PI_OVER_TWO,
+              roll: 0.0,
+            },
+          });
+        }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+      };
+
       function getRouteToDestination(){
         document.getElementById('selectDestDiv').style.display = 'none';
+        if(h2 !== undefined){
+          h2 = h2 && h2.destroy();
+        }
         document.getElementById('drawRouteDiv').style.display = 'block';
-        var lonLatArray = [];
-        let [status, routeline, routelength] = getRoadRouteHere([userLocation.lat, userLocation.lon], [destLatLon.lat, destLatLon.lon]);
+        let [status, routeline, routelength, code] = getRoadRouteHere([userLocation.lat, userLocation.lon], [destLatLon.lat, destLatLon.lon]);
+        routeCode = code;
 				//routelength = routelength.toFixed(2);
         if(status){
           for(i=0; i<routeline.length; i++){
@@ -455,14 +527,91 @@
           }
           routePolyline.polyline.positions = Cesium.Cartesian3.fromDegreesArray(lonLatArray);
           routePolyline.show = true;
+          routeCorridor.corridor.positions = Cesium.Cartesian3.fromDegreesArray(lonLatArray);
+          routeCorridor.show=true;
         }
       };
+
+      function updateCorrdior(){
+        if(routeCorridor.corridor !== undefined){
+          routeCorridor.corridor.width = document.getElementById('searchWidth').value;
+        }
+      }
 
       function backToSelectDest() {
         document.getElementById('selectDestDiv').style.display = 'block';
         document.getElementById('drawRouteDiv').style.display = 'none';
         routePolyline.show = false;
+        routeCorridor.show=false;
         selectDestination();
+      };
+      
+      function goToSearchLandmark() {
+        document.getElementById('searchLandmarkDiv').style.display = 'block';
+        document.getElementById('drawRouteDiv').style.display = 'none';
+      };
+
+      // Calculate the length of the line
+      function getLength(geodesic, pointsList) {
+        // Get the end position from the polyLine's callback.
+        // var endPoint = redLine.polyline.positions.getValue(time, result)[1];
+        var startCartographic = Cesium.Cartographic.fromDegrees(pointsList[0], pointsList[1]);
+        var endCartographic = Cesium.Cartographic.fromDegrees(pointsList[2], pointsList[3]);
+        // endCartographic = Cesium.Cartographic.fromCartesian(endPoint);
+        geodesic.setEndPoints(startCartographic, endCartographic);
+        var lengthInMeters = Math.round(geodesic.surfaceDistance);
+        return (lengthInMeters).toFixed(2);
+      };
+
+      function getMidpoint(geodesic) {
+        var midpointCartographic = geodesic.interpolateUsingFraction(0.5);
+        var lon = Cesium.Math.toDegrees(midpointCartographic.longitude);
+        var lat = Cesium.Math.toDegrees(midpointCartographic.latitude);
+        return [lat, lon];
+      };
+            
+      function searchPlace(){
+        var geodesic = new Cesium.EllipsoidGeodesic();
+        var guidePoints = [userLocation.lon, userLocation.lat, destLatLon.lon, destLatLon.lat]; // don't need to update lastLon and lastLat every mouse movement
+				var length = getLength(geodesic, guidePoints);
+        let [midLat, midLon] = getMidpoint(geodesic);
+        let query = document.getElementById('searchPlaceText').value;
+        if(query == '' || query == 'Search along the route'){
+          alert('Please type the name of an intermediate stop');
+        }else{
+          searchOptions = {};
+          searchOptions['width'] = document.getElementById('searchWidth').value;
+          searchOptions['route'] = routeCode;
+          let [status, searchResults] = searchIntermediatePlaces(query, midLat, midLon, 10000, 5, searchOptions);
+          if(status){
+            document.getElementById('searchLandmarkDiv').style.display = 'none';
+            for(let id in searchResults){
+              let name = searchResults[id]['title'];
+              searchPlaceEntities[id] = viewer.entities.add({
+                name: searchResults[id]['title'],
+                position: Cesium.Cartesian3.fromDegrees(searchResults[id].location['lng'], searchResults[id].location['lat']),
+                billboard: {
+                  image: pinBuilder.fromText(id, Cesium.Color.ORANGE, 60).toDataURL(),
+                  verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                  heightReference : Cesium.HeightReference.RELATIVE_TO_GROUND
+                },
+                description: searchResults[id]['address'] + "<br>" + searchResults[id]['isOpen'] + "<p><button onClick = 'getNewRoute()'>select</button></p>",
+                show : true,
+                label: {
+                  text: name,
+                  font: '20px sans-serif',
+                  heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+                  pixelOffset: new Cesium.Cartesian2(0, -65)
+                  //eyeOffSet: new Cesium.Cartesian3(0.0, 1000.0, 0.0)
+                }
+              });
+            }
+          }
+        }
+        
+      }
+      function getNewRoute(){
+        document.getElementById("demo").innerHTML = alert('blah');
       }
       // 	function dropPin()  {
       // 		/* Click on a point and get lat, lon, alt */
