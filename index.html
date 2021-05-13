@@ -193,7 +193,7 @@
     <button class="buttoninfoDiv" onClick="">Previous</button>
     <select id="searchWidth" class="dropdown" onChange="updateCorrdior();" title="Search Distance From Route">
       <option value="">--Select Distance Off Route--</option>
-      <option value="200">200 Meters</option>
+      <option value="200" selected>200 Meters</option>
       <option value="500">500 Meters</option>
       <option value="1000">1000 Meters</option>
     </select>
@@ -595,7 +595,7 @@
                   verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
                   heightReference : Cesium.HeightReference.RELATIVE_TO_GROUND
                 },
-                description: searchResults[id]['address'] + "<br>" + searchResults[id]['isOpen'] + "<p><button onClick = 'getNewRoute()'>select</button></p>",
+                description: searchResults[id]['address'] + "<br>" + searchResults[id]['isOpen'] + "<p><button onClick = 'getNewRoute(lat,lon,123)'>select</button></p><p id=123/></p>",
                 show : true,
                 label: {
                   text: name,
@@ -611,7 +611,7 @@
         
       }
       function getNewRoute(){
-        document.getElementById("demo").innerHTML = alert('blah');
+        alert('blah');
       }
       // 	function dropPin()  {
       // 		/* Click on a point and get lat, lon, alt */
