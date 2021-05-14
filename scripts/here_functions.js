@@ -209,10 +209,12 @@ function searchIntermediatePlaces (queryText, bbox, searchLimit, routeOptions=fa
                 searchResults[i]['title'] = data['items'][i]['title'];
                 searchResults[i]['address'] = data['items'][i]['address']['label'];
                 searchResults[i]['location'] = data['items'][i]['position'];
-                if(data['items'][i]['isOpen'] == 'true'){
-                    searchResults[i]['isOpen'] = 'Open';
-                }else{
-                    searchResults[i]['isOpen'] = "Closed";
+                if('openingHours' in data['items'][i]){
+                    if(data['items'][i]['openingHours'][0]['isOpen'] == true){
+                        searchResults[i]['isOpen'] = 'Open';
+                    }else{
+                        searchResults[i]['isOpen'] = "Closed";
+                    }
                 }
             }
             myStatus = 1;

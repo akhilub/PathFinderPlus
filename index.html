@@ -434,6 +434,15 @@
                     verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
                     heightReference : Cesium.HeightReference.RELATIVE_TO_GROUND
                   },
+                  label: {
+                    text: undefined,
+                    font: '30px sans-serif',
+                    outlineColor : Cesium.Color.BLACK,
+                    heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+                    pixelOffset: new Cesium.Cartesian2(0, -70),
+                    fillColor: Cesium.Color.RED,
+                    show: false,
+                  }
                 });
               }
             );
@@ -586,7 +595,7 @@
           document.getElementById('drawRouteDiv').style.display = 'block';
           let [status, routeline, routelength, duration, code] = getRoadRouteHere([userLocation.lat, userLocation.lon], [destLatLon.lat, destLatLon.lon]);
           routeCode = code;
-          routeDuration = duration;
+          routeDuration = Math.round(duration/60);
           // console.log(routeline);
           //routelength = routelength.toFixed(2);
           if(status){
@@ -615,6 +624,8 @@
             routePolyline.show = true;
             routeCorridor.corridor.positions = Cesium.Cartesian3.fromDegreesArray(lonLatArray);
             routeCorridor.show=true;
+            destPin.label.text = routeDuration+' min';
+            destPin.label.show = true;
           }
 
           // bbox = viewer.entities.add({
@@ -730,14 +741,16 @@
         var lon = searchLocations[viewer.selectedEntity.name][1];
         let [status, routeline, routelength, duration, code] = getRoadRouteHere([userLocation.lat, userLocation.lon], [destLatLon.lat, destLatLon.lon], via=[lat,lon]);
         routeCode = code;
+        newDuration = Math.round(duration/60);
+        console.log(newDuration);
         lonLatArray = [];
         // console.log(routeline);
         for(i=0; i<routeline.length; i++){
             lonLatArray.push(routeline[i][1], routeline[i][0]);
         }
         newRoutePolyline.polyline.positions = Cesium.Cartesian3.fromDegreesArray(lonLatArray);
-        let diff = duration - routeDuration;
-        diff = Math.round(diff/60);
+        let diff = newDuration - routeDuration;
+        console.log(diff);
         if(diff > 0){
           document.getElementById('durationDiff').innerText = 'Added Duration: ' + diff + ' min';
           // document.querySelector("div.cesium-infoBox-description strong[id='durationDiff']").innerText = 'Added Duration: ' + diff + 'minutes\n';
@@ -762,6 +775,7 @@
         viewer.selectedEntity = undefined;
         document.getElementById('selectIntermediateDiv').style.display = 'none'; 
         routePolyline.show = false;
+        destPin.label.text = newDuration+' min';
       }
 
       function hideSearchEntities(except){
