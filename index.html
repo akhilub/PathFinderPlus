@@ -105,6 +105,31 @@
         width: 200px;
       }
 
+      .aboveInfoBox {
+        background: none;
+        position: absolute;
+        display: none;
+        top: 20px;
+        right: 25px;
+        align-content: center;
+        width: 100px;
+        z-index: 4;
+      }
+
+      .infoBoxButton {
+        position: absolute;
+        background-color: white;
+        border-radius: 10px;
+        color: black;
+        right: 0;
+        top: 30px;
+        width: 80px;
+        font-size: 15px;
+        margin: 4px 2px;
+        font-size: 15px;
+        display: inline-block;
+      }
+
       .child {
         padding: 10px 20px 10px 20px;
         position: fixed;
@@ -193,12 +218,15 @@
     <button class="buttoninfoDiv" onClick="">Previous</button>
     <select id="searchWidth" class="dropdown" onChange="updateCorrdior();" title="Search Distance From Route">
       <option value="">--Select Distance Off Route--</option>
-      <option value="200" selected>200 Meters</option>
+      <option value="200" selected>200 Meters</option> <!--Cesium corridor width is 2x the value-->
       <option value="500">500 Meters</option>
       <option value="1000">1000 Meters</option>
     </select>
     <button class="buttoninfoDiv" onClick="searchPlace()">Enter</button>
   </div>
+</div>
+<div class="aboveInfoBox" id="selectIntermediateDiv" hidden>
+  <button class="infoBoxButton" id="selectPlaceButton" onClick="proceedWithRoute();">Select</button>
 </div>
 
     <!--
@@ -213,7 +241,8 @@
       var userLocation = {lat: 42.99981911246973, lon: -78.7891529772581 };
       var watchId, watchPositionOptions;
       var userModel, startPin, destPin;
-      var destLatLon = {lat: 0, lon: 0};
+      var destLatLon = {lat: undefined, lon: undefined};
+      var routePoints = [];
       var lonLatArray = [];
       var destSelected = 0;
       var routeCode;
@@ -247,6 +276,11 @@
         navigationInstructionsInitiallyVisible: false, //,
         terrainProvider: cesiumTerrainProvider, // Cesium.createWorldTerrain()  	FIXME -- This is making our targets appear underground.  We need to specify altMSL.
       });
+      // Just threw this here to allow a javascript function to be called from a button inside Cesium infoBox
+      // https://community.cesium.com/t/cant-run-scripts-in-infobox/11956
+      viewer.infoBox.frame.setAttribute("sandbox", "allow-same-origin allow-popups allow-forms allow-scripts");
+      viewer.infoBox.frame.src = "about:blank";
+      
       viewer.extend(Cesium.viewerDragDropMixin);
       var scene = viewer.scene;
       let canvas = scene.canvas;
@@ -306,14 +340,26 @@
         show : false
       });
 
+      newRoutePolyline = viewer.entities.add({
+        name : 'newRoute',
+        polyline : {
+          positions : undefined,
+          material : Cesium.Color.MAGENTA.withAlpha(0.8),
+          width : 5,
+          clampToGround : true,
+        },
+        show : false
+      });
+
       routeCorridor = viewer.entities.add({
         name : 'Corridor',
         corridor : {
           positions : undefined,
-          material : Cesium.Color.ALICEBLUE.withAlpha(0.5),
-          width : 200,
-          clampToGround : true,
+          material : Cesium.Color.AZURE.withAlpha(0.2),
+          width : 400, // Note the search along route is half this value
+          clampToGround : true, 
         },
+        cornerType: Cesium.CornerType.ROUNDED,
         show : false
       });
 
@@ -332,7 +378,6 @@
           }else {
             alert("Geolocation is not supported by this browser.");
           }
-          selectDestination();
         }else{
           userLocationDeclined();
         }
@@ -518,23 +563,53 @@
           h2 = h2 && h2.destroy();
         }
         document.getElementById('drawRouteDiv').style.display = 'block';
-        let [status, routeline, routelength, code] = getRoadRouteHere([userLocation.lat, userLocation.lon], [destLatLon.lat, destLatLon.lon]);
+        let [status, routeline, routelength, duration, code] = getRoadRouteHere([userLocation.lat, userLocation.lon], [destLatLon.lat, destLatLon.lon]);
         routeCode = code;
+        routeDuration = duration;
+        // console.log(routeline);
 				//routelength = routelength.toFixed(2);
         if(status){
+          // Find min, max latitude and min, max longitude
+          minLat = routeline[0][0]; // South latitude
+          minLon = routeline[0][1]; // West longitude
+          maxLat = routeline[0][0]; // North latitude
+          maxLon = routeline[0][1]; // East longitude
+          lonLatArray = [];
           for(i=0; i<routeline.length; i++){
             lonLatArray.push(routeline[i][1], routeline[i][0]);
+            if(routeline[i][0] < minLat){
+              minLat = routeline[i][0];
+            }
+            if(routeline[i][1] < minLon){
+              minLon = routeline[i][1];
+            }
+            if(routeline[i][0] > maxLat){
+              maxLat = routeline[i][0];
+            }
+            if(routeline[i][1] > maxLon){
+              maxLon = routeline[i][1];
+            }
           }
           routePolyline.polyline.positions = Cesium.Cartesian3.fromDegreesArray(lonLatArray);
           routePolyline.show = true;
           routeCorridor.corridor.positions = Cesium.Cartesian3.fromDegreesArray(lonLatArray);
           routeCorridor.show=true;
         }
+
+        // bbox = viewer.entities.add({
+        //   name: 'bbox',
+        //   rectangle: {
+        //     coordinates: Cesium.Rectangle.fromDegrees(minLon,minLat,maxLon,maxLat),
+        //     material : Cesium.Color.DARKCYAN.withAlpha(0.7),
+        //     clampToGround: true,
+        //   },
+        //   show: true,
+        // });
       };
 
       function updateCorrdior(){
         if(routeCorridor.corridor !== undefined){
-          routeCorridor.corridor.width = document.getElementById('searchWidth').value;
+          routeCorridor.corridor.width = document.getElementById('searchWidth').value * 2;
         }
       }
 
@@ -551,30 +626,30 @@
         document.getElementById('drawRouteDiv').style.display = 'none';
       };
 
-      // Calculate the length of the line
-      function getLength(geodesic, pointsList) {
-        // Get the end position from the polyLine's callback.
-        // var endPoint = redLine.polyline.positions.getValue(time, result)[1];
-        var startCartographic = Cesium.Cartographic.fromDegrees(pointsList[0], pointsList[1]);
-        var endCartographic = Cesium.Cartographic.fromDegrees(pointsList[2], pointsList[3]);
-        // endCartographic = Cesium.Cartographic.fromCartesian(endPoint);
-        geodesic.setEndPoints(startCartographic, endCartographic);
-        var lengthInMeters = Math.round(geodesic.surfaceDistance);
-        return (lengthInMeters).toFixed(2);
-      };
+      // // Calculate the length of the line
+      // function getLength(geodesic, pointsList) {
+      //   // Get the end position from the polyLine's callback.
+      //   // var endPoint = redLine.polyline.positions.getValue(time, result)[1];
+      //   var startCartographic = Cesium.Cartographic.fromDegrees(pointsList[0], pointsList[1]);
+      //   var endCartographic = Cesium.Cartographic.fromDegrees(pointsList[2], pointsList[3]);
+      //   // endCartographic = Cesium.Cartographic.fromCartesian(endPoint);
+      //   geodesic.setEndPoints(startCartographic, endCartographic);
+      //   var lengthInMeters = Math.round(geodesic.surfaceDistance);
+      //   return (lengthInMeters).toFixed(2);
+      // };
 
-      function getMidpoint(geodesic) {
-        var midpointCartographic = geodesic.interpolateUsingFraction(0.5);
-        var lon = Cesium.Math.toDegrees(midpointCartographic.longitude);
-        var lat = Cesium.Math.toDegrees(midpointCartographic.latitude);
-        return [lat, lon];
-      };
-            
+      // function getMidpoint(geodesic) {
+      //   var midpointCartographic = geodesic.interpolateUsingFraction(0.5);
+      //   var lon = Cesium.Math.toDegrees(midpointCartographic.longitude);
+      //   var lat = Cesium.Math.toDegrees(midpointCartographic.latitude);
+      //   return [lat, lon];
+      // };
+
       function searchPlace(){
-        var geodesic = new Cesium.EllipsoidGeodesic();
-        var guidePoints = [userLocation.lon, userLocation.lat, destLatLon.lon, destLatLon.lat]; // don't need to update lastLon and lastLat every mouse movement
-				var length = getLength(geodesic, guidePoints);
-        let [midLat, midLon] = getMidpoint(geodesic);
+        // var geodesic = new Cesium.EllipsoidGeodesic();
+        // var guidePoints = [userLocation.lon, userLocation.lat, destLatLon.lon, destLatLon.lat];
+				// var length = getLength(geodesic, guidePoints);
+        // let [midLat, midLon] = getMidpoint(geodesic);
         let query = document.getElementById('searchPlaceText').value;
         if(query == '' || query == 'Search along the route'){
           alert('Please type the name of an intermediate stop');
@@ -582,37 +657,94 @@
           searchOptions = {};
           searchOptions['width'] = document.getElementById('searchWidth').value;
           searchOptions['route'] = routeCode;
-          let [status, searchResults] = searchIntermediatePlaces(query, midLat, midLon, 10000, 5, searchOptions);
+          let [status, searchResults] = searchIntermediatePlaces(query, [minLon, minLat, maxLon, maxLat], 5, searchOptions);
           if(status){
-            document.getElementById('searchLandmarkDiv').style.display = 'none';
-            for(let id in searchResults){
-              let name = searchResults[id]['title'];
-              searchPlaceEntities[id] = viewer.entities.add({
-                name: searchResults[id]['title'],
-                position: Cesium.Cartesian3.fromDegrees(searchResults[id].location['lng'], searchResults[id].location['lat']),
-                billboard: {
-                  image: pinBuilder.fromText(id, Cesium.Color.ORANGE, 60).toDataURL(),
-                  verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-                  heightReference : Cesium.HeightReference.RELATIVE_TO_GROUND
-                },
-                description: searchResults[id]['address'] + "<br>" + searchResults[id]['isOpen'] + "<p><button onClick = 'getNewRoute(lat,lon,123)'>select</button></p><p id=123/></p>",
-                show : true,
-                label: {
-                  text: name,
-                  font: '20px sans-serif',
-                  heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
-                  pixelOffset: new Cesium.Cartesian2(0, -65)
-                  //eyeOffSet: new Cesium.Cartesian3(0.0, 1000.0, 0.0)
-                }
-              });
+            if(Object.keys(searchResults).length > 0){
+              document.getElementById('searchLandmarkDiv').style.display = 'none';
+              searchLocations = {};
+              for(let id in searchResults){
+                searchLocations[searchResults[id]['title'] + id] = [searchResults[id].location['lat'], searchResults[id].location['lng']]
+                searchPlaceEntities[id] = viewer.entities.add({
+                  name: searchResults[id]['title'] + id,
+                  position: Cesium.Cartesian3.fromDegrees(searchResults[id].location['lng'], searchResults[id].location['lat']),
+                  billboard: {
+                    image: pinBuilder.fromText(id, Cesium.Color.ORANGE, 60).toDataURL(),
+                    verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                    heightReference : Cesium.HeightReference.RELATIVE_TO_GROUND
+                  },
+                  description: searchResults[id]['address'] + "<br>" + searchResults[id]['isOpen']+"</p><br><p id='newRouteDuration'></p>", //<button onClick = 'getNewRoute();'>select</button><p id='query+id'>" + 
+                  show : true,
+                  label: {
+                    text: searchResults[id]['title'],
+                    font: '20px sans-serif',
+                    outlineColor : Cesium.Color.BLACK,
+                    heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+                    pixelOffset: new Cesium.Cartesian2(0, -70)
+                    //eyeOffSet: new Cesium.Cartesian3(0.0, 1000.0, 0.0)
+                  }
+                });
+                viewer.selectedEntityChanged.addEventListener(function(selectedEntity) {
+                  if (Cesium.defined(selectedEntity)) {
+                      if (Cesium.defined(selectedEntity.name)) {
+                        document.getElementById('selectIntermediateDiv').style.display = 'block';
+                        getNewRoute();
+                        console.log('Selected ' + selectedEntity.name);
+                      }
+                  } else {
+                    document.getElementById('selectIntermediateDiv').style.display = 'none';
+                    // console.log('Deselected.');
+                  }
+                });
+              }
+            }else{
+              alert('Could not find "' + query + '" near route');
             }
           }
         }
-        
-      }
+      };
+
       function getNewRoute(){
-        alert('blah');
+        var lat = searchLocations[viewer.selectedEntity.name][0];
+        var lon = searchLocations[viewer.selectedEntity.name][1];
+        let [status, routeline, routelength, duration, code] = getRoadRouteHere([userLocation.lat, userLocation.lon], [destLatLon.lat, destLatLon.lon], via=[lat,lon]);
+        routeCode = code;
+        lonLatArray = [];
+        // console.log(routeline);
+        for(i=0; i<routeline.length; i++){
+            lonLatArray.push(routeline[i][1], routeline[i][0]);
+        }
+        newRoutePolyline.polyline.positions = Cesium.Cartesian3.fromDegreesArray(lonLatArray);
+        let diff = duration - routeDuration;
+        diff = (diff/60).toFixed(1);
+        if(diff > 0){
+          document.getElementById('newRouteDuration').value = 'Added Duration: ' + diff + 'minutes';
+        }else{
+          document.getElementById('newRouteDuration').value = 'Reduced Duration: ' + diff + 'minutes';
+        }
+        
+        newRoutePolyline.show = true;
+        routeCorridor.show = false;
+        // viewer.selectedEntity = undefined;
+        // document.getElementById('selectIntermediateDiv').style.display = 'none';
+        // hideSearchEntities(viewer.selectedEntity.name);
+        // document.getElementsByClassName('cesium-infoBox cesium-infoBox-visible')[0].style.display = 'none';
+      };
+
+      function proceedWithRoute(){
+        routeCorridor.show = false;
+        hideSearchEntities(viewer.selectedEntity.name);
+        viewer.selectedEntity = undefined;
+        document.getElementById('selectIntermediateDiv').style.display = 'none'; 
       }
+
+      function hideSearchEntities(except){
+        for(id in searchPlaceEntities){
+          if(searchPlaceEntities[id].name !== except){
+            searchPlaceEntities[id].show = false;
+          }
+        }
+      };
+
       // 	function dropPin()  {
       // 		/* Click on a point and get lat, lon, alt */
 

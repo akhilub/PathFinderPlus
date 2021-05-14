@@ -41,7 +41,7 @@ function getSnapToRoadLocationHere([lat, lon])  {
     return [myStatus, latLonAlt];		
 }
 	
-function getRoadRouteHere(origLatLon, destLatLon, transportMode='car')  {
+function getRoadRouteHere(origLatLon, destLatLon, via=[], transportMode='car')  {
     /*
     Uses here.com API to determine turn-by-turn road route from an origin to a destination.
     See https://developer.here.com/documentation/routing-api/8.21.6/api-reference-swagger.html 
@@ -68,22 +68,35 @@ function getRoadRouteHere(origLatLon, destLatLon, transportMode='car')  {
         'apiKey=' + here_api_key + 
         '&transportMode=' + transportMode + 
         '&origin=' + origLatLon[0] + ',' + origLatLon[1] + 
-        '&destination=' + destLatLon[0] + ',' + destLatLon[1] + 
-        '&return=' + 'polyline' + ',' + 'elevation' + ',' + 'travelSummary';
-
-    var polyline = []
+        '&destination=' + destLatLon[0] + ',' + destLatLon[1];
+    if(via.length > 0){
+        shapeUrl += '&via=' + via[0] + ',' + via[1]; // Assuming only one intermediate waypoint
+        shapeUrl += '&return=' + 'polyline' + ',' + 'passthrough' + ',' + 'elevation' + ',' + 'travelSummary';
+    }else{
+        shapeUrl += '&return=' + 'polyline' + ',' + 'elevation' + ',' + 'travelSummary';
+    }
+    
+    console.log(shapeUrl);
+    var polyline = [];
     var myStatus = 0;
     var lenMeters = 0;
     var routeCode;
+    var duration = 0;
     
     $.ajax({
         url: shapeUrl,
         dataType: 'json',
         async: false,
         success: function (data){
-            routeCode = data.routes[0]['sections'][0]['polyline'];
-            polyline = decode(routeCode).polyline;
-            lenMeters = data.routes[0]['sections'][0]['travelSummary']['length']
+            for(i=0; i<data.routes[0]['sections'].length; i++){
+                routeCode = data.routes[0]['sections'][i]['polyline'];
+                polyline = polyline.concat(decode(routeCode).polyline);
+                lenMeters += data.routes[0]['sections'][i]['travelSummary']['length'];
+                duration += data.routes[0]['sections'][i]['travelSummary']['duration'];
+            }
+            // routeCode = data.routes[0]['sections'][0]['polyline'];
+            // polyline = decode(routeCode).polyline;
+            // lenMeters = data.routes[0]['sections'][0]['travelSummary']['length']
             myStatus = 1;
         },
         error: function (request, status, error) {
@@ -99,7 +112,7 @@ function getRoadRouteHere(origLatLon, destLatLon, transportMode='car')  {
         }
     });	
     
-    return [myStatus, polyline, lenMeters, routeCode];
+    return [myStatus, polyline, lenMeters, duration, routeCode];
 }
 
 function getIsolineHere([lat, lon], rangeType, rangeValues, isOrigin=true, transportMode='car')  {
@@ -161,7 +174,7 @@ function getIsolineHere([lat, lon], rangeType, rangeValues, isOrigin=true, trans
     return [myStatus, myData];
 }
 
-function searchIntermediatePlaces (queryText, lat, lon, radiusMeters, searchLimit, routeOptions=false){
+function searchIntermediatePlaces (queryText, bbox, searchLimit, routeOptions=false){
     // Searching in a radius at a given lat lon
     // example: https://discover.search.hereapi.com/v1/discover?apiKey=O9Hg9mex8CfcyrMbryKAtSANkpNQAZ_yjUKDyapEEmY&q=Insomnia%20Cookies&in=circle:42.99981911246973,-78.7891529772581;r=2000&limit=5
     var discoverUrl;
@@ -170,19 +183,18 @@ function searchIntermediatePlaces (queryText, lat, lon, radiusMeters, searchLimi
             'apiKey=' + here_api_key + 
             '&q=' + queryText +
             '&limit=' + searchLimit +
-            '&in=circle:' + lat + ',' + lon + ';' +
-            'r=' + radiusMeters +
+            '&in=bbox:' + bbox[0] + ',' + bbox[1] + ',' + bbox[2] + ',' + bbox[3] +
             '&route=' + routeOptions['route'] + ';' +
             'w=' + routeOptions['width'];
-
-    }else{
-        discoverUrl = 'https://discover.search.hereapi.com/v1/discover?' + 
-            'apiKey=' + here_api_key + 
-            '&q=' + queryText +
-            '&in=circle:' + lat + ',' + lon + ';' +
-            'r=' + radiusMeters +
-            '&limit=' + searchLimit;
     }
+    // }else{
+    //     discoverUrl = 'https://discover.search.hereapi.com/v1/discover?' + 
+    //         'apiKey=' + here_api_key + 
+    //         '&q=' + queryText +
+    //         '&in=circle:' + lat + ',' + lon + ';' +
+    //         'r=' + radiusMeters +
+    //         '&limit=' + searchLimit;
+    // }
     console.log(discoverUrl);
     var searchResults = {};
     
@@ -197,7 +209,7 @@ function searchIntermediatePlaces (queryText, lat, lon, radiusMeters, searchLimi
                 searchResults[i]['title'] = data['items'][i]['title'];
                 searchResults[i]['address'] = data['items'][i]['address']['label'];
                 searchResults[i]['location'] = data['items'][i]['position'];
-                if(data['items'][i]['openingHours']['isOpen'] == 'true'){
+                if(data['items'][i]['isOpen'] == 'true'){
                     searchResults[i]['isOpen'] = 'Open';
                 }else{
                     searchResults[i]['isOpen'] = "Closed";
