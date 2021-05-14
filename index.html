@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="../Build/Cesium/Widgets/widgets.css" />
   <script src="../Build/Cesium/Cesium.js"></script>
 -->
-    <script src="keys.js"></script>
+    <script src="scripts/keys.js"></script>
     <script src="scripts/decoder.js"></script>
     <script src="scripts/here_functions.js"></script>
     <!--
@@ -45,47 +45,46 @@
       .infoDiv {
         background: rgba(194, 195, 197, 0.87);
         /*background: #d3d3d3;*/
-        padding: 25px 40px 25px 40px;
+        padding: 5px 5px 5px 5px;
         border-radius: 10px;
-        position: absolute;
-        width: 50%;
-        height: 200px;
+        width: 70%;
+        height: 15%;
+        max-height: 200px;
         overflow-y: auto;
         text-align: "center";
         z-index: 4;
         /* color: white; */
-        font-size: 20px;
+        font-size: 15px;
         color: black;
         /* overflow: hidden; */
-        position: fixed;
-        top: 20%;
+        position: absolute;
+        top: 10%;
         left: 50%;
+        right: 50%;
         transform: translate(-50%, -50%);
-        display: flex;
-        align-content: center;
       }
 
       .blueDiv {
-        background: rgba(89, 176, 243, 0.7);
+        background: rgba(153, 205, 245, 0.7);
         /*background: #54a4da;*/
-        padding: 25px 40px 25px 40px;
+        padding: 5px 5px 5px 5px;
         border-radius: 10px;
         position: absolute;
-        width: 50%;
-        height: 200px;
-        overflow-y: auto;
+        width: 70%;
+        height: 20%;
+        max-height: 200px;
+        overflow-y: scroll;
         text-align: "center";
         z-index: 4;
         /* color: white; */
-        font-size: 20px;
+        font-size: 15px;
         color: black;
         /* overflow: hidden; */
-        position: fixed;
-        top: 20%;
+        position: absolute;
+        top: 10%;
         left: 50%;
         transform: translate(-50%, -50%);
         display: none; /* flex; */
-        align-content: center;
       }
 
       .buttoninfoDiv {
@@ -93,27 +92,30 @@
         border: 1px solid black;
         border-radius: 10px;
         color: black;
-        padding: 15px 25px;
+        padding: 5px 5px;
         text-align: center;
         text-decoration: none;
         display: inline-block;
-        font-size: 15px;
-        margin: 4px 2px;
+        font-size: 70%;
+        margin: 2px 2px;
         cursor: pointer;
         white-space: normal;
         word-wrap: break-word;
-        width: 200px;
+        width: 25%;
       }
 
       .aboveInfoBox {
-        background: none;
+        background: rgba(84,84,84,1);
+        color: rgb(255, 255, 255);
         position: absolute;
         display: none;
-        top: 20px;
-        right: 25px;
+        top: 10px;
+        right: 20%;
         align-content: center;
-        width: 100px;
+        width: 40%;
+        max-width: 300px;
         z-index: 4;
+        height: auto;
       }
 
       .infoBoxButton {
@@ -121,19 +123,31 @@
         background-color: white;
         border-radius: 10px;
         color: black;
-        right: 0;
-        top: 30px;
         width: 80px;
         font-size: 15px;
-        margin: 4px 2px;
-        font-size: 15px;
+        padding-left: 10px;
         display: inline-block;
+      }
+
+      .infoBoxTopAlert {
+        display: inline-block;
+        color:rgb(248, 4, 248);
+        font-size: 20px;
+        padding-right: 5px;
       }
 
       .child {
         padding: 10px 20px 10px 20px;
-        position: fixed;
+        position: relative;
+        align-content: flex-start;
         top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+
+      .center {
+        margin: 10px;
+        position: absolute;
         left: 50%;
         transform: translate(-50%, -50%);
       }
@@ -153,6 +167,7 @@
         left: 4px;
         height: 50px;
         text-align: center;
+        display: inline-block;
       }
 
       input[type=text]:enabled {
@@ -173,59 +188,63 @@
     <div id="cesiumContainer" class="fullsize"></div>
 
     <div id="myInfoDiv" class="infoDiv">
-      <div class="child">
-        <h3>Find landmarks on your route</h3>
-        <h4>To select initial location</h4>
-        <button class="buttoninfoDiv" onClick="manualUserLocation()">Click here to select manually</button>
-        <button class="buttoninfoDiv" onClick="getStartingLocation(1)">Click here to get your current location</button>
+      <!-- <div class="child"> -->
+        <h3 style="margin:5px;">Find landmarks on your route</h3>
+        <h4 style="margin:5px;">Select initial location</h4>
+        <!-- <div class="center"> -->
+        <button class="buttoninfoDiv" onClick="manualUserLocation()">Select Manually</button>
+        <button class="buttoninfoDiv" onClick="getStartingLocation(1)">Your Location</button>
         <button class="buttoninfoDiv" onClick="getStartingLocation(0)">Default Location</button>
-      </div>
+      <!-- </div> -->
+      <!-- </div> -->
     </div>
     <div class="blueDiv" id="manualUserLocationDiv" hidden>
-      <h4>Click on the map to select your starting position. Click Next to proceed</h4>
-      <div class="child">
-        <button class="buttoninfoDiv" onClick="openDestinationSelect()">Next</button>
-      </div>
+      <h4 style="margin:5px;">Click on the map to select your starting position. Click Next to proceed</h4>
+      <!-- <div class="child"> -->
+      <button class="buttoninfoDiv" onClick="openDestinationSelect()">Next</button>
+      <!-- </div> -->
     </div>
 
 <!-- Page 3 Div -->
     <div class="blueDiv" id="selectDestDiv" hidden>
-      <div class="child">
-
-        <input type="text" class="form-control" placeholder="Type Destination" id="first"><br>
+      <!-- <div class="child"> -->
+        <h3 style="margin:5px;">Click on Map to Select Destination</h3>
+        <!-- <input type="text" class="form-control" placeholder="Type Destination" id="first"><br> -->
         <button class="buttoninfoDiv">Previous</button>
-        <button class="buttoninfoDiv">Enter</button>
+        <!-- <button class="buttoninfoDiv">Enter</button> -->
         <button class="buttoninfoDiv" onClick="getRouteToDestination()">Get Route</button>
-      </div>
+      <!-- </div> -->
     </div>
 
 
 <!-- Page 4 Div -->
 
 <div class="blueDiv" id="drawRouteDiv" hidden>
-  <div class="child">
+  <!-- <div class="child"> -->
+    <h3 style="margin:5px;">Click "Search Along Route" to Proceed</h3>
     <button class="buttoninfoDiv" onClick="backToSelectDest()">Previous</button>
     <button class="buttoninfoDiv" onClick="goToSearchLandmark()">Search Along Route</button>
-  </div>
+  <!-- </div> -->
 </div>
 
 <!-- Page 5 Div -->
 
 <div class="blueDiv" id="searchLandmarkDiv" hidden>
-  <div class="child">
-    <h3>Intermediate Location</h3>
-    <input type="text" class="form-control" placeholder="Search along the route" id="searchPlaceText"><br>
+  <!-- <div class="child"> -->
+    <h3 style="margin:5px;">Intermediate Location</h3>
+    <input type="text" class="form-control" placeholder="Search along the route" style="width:50%; height:5%" id="searchPlaceText"><br>
     <button class="buttoninfoDiv" onClick="">Previous</button>
-    <select id="searchWidth" class="dropdown" onChange="updateCorrdior();" title="Search Distance From Route">
+    <select id="searchWidth" class="dropdown" style="width:35%" onChange="updateCorrdior();" title="Search Distance From Route">
       <option value="">--Select Distance Off Route--</option>
       <option value="200" selected>200 Meters</option> <!--Cesium corridor width is 2x the value-->
       <option value="500">500 Meters</option>
       <option value="1000">1000 Meters</option>
     </select>
     <button class="buttoninfoDiv" onClick="searchPlace()">Enter</button>
-  </div>
+  <!-- </div> -->
 </div>
 <div class="aboveInfoBox" id="selectIntermediateDiv" hidden>
+  <strong class='infoBoxTopAlert' id='durationDiff'></strong>
   <button class="infoBoxButton" id="selectPlaceButton" onClick="proceedWithRoute();">Select</button>
 </div>
 
@@ -278,7 +297,7 @@
       });
       // Just threw this here to allow a javascript function to be called from a button inside Cesium infoBox
       // https://community.cesium.com/t/cant-run-scripts-in-infobox/11956
-      viewer.infoBox.frame.setAttribute("sandbox", "allow-same-origin allow-popups allow-forms allow-scripts");
+      viewer.infoBox.frame.setAttribute("sandbox", "allow-same-origin allow-top-navigation allow-pointer-lock allow-popups allow-forms allow-scripts");
       viewer.infoBox.frame.src = "about:blank";
       
       viewer.extend(Cesium.viewerDragDropMixin);
@@ -307,11 +326,11 @@
         destination: Cesium.Cartesian3.fromDegrees(
           userLocation.lon,
           userLocation.lat,
-          2000
+          5000
         ), //sensorPos,
         orientation: {
           heading: 0.0,
-          pitch: -Cesium.Math.PI_OVER_TWO,
+          pitch: -1.45,
           roll: 0.0,
         },
       });
@@ -396,7 +415,6 @@
 
       function selectDestination(){
         h2 = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
-        h2.mouseEmulationIgnoreMilliseconds = 300;
         
         h2.setInputAction(function(click) {
           var clickPosition = viewer.scene.pickPosition(click.position);
@@ -406,7 +424,7 @@
           console.log(destLatLon);
           if(destPin === undefined){
             Cesium.when(
-              pinBuilder.fromUrl("checkered-flag.png", Cesium.Color.BLACK, 60),
+              pinBuilder.fromUrl("images/checkered-flag.png", Cesium.Color.BLACK, 60),
               function (canvas) {
                 destPin = viewer.entities.add({
                   name: "destination",
@@ -446,11 +464,11 @@
           destination: Cesium.Cartesian3.fromDegrees(
             userLocation.lon,
             userLocation.lat,
-            2000
+            5000
           ),
           orientation: {
             heading: 0.0,
-            pitch: -Cesium.Math.PI_OVER_TWO,
+            pitch: -1.45,
             roll: 0.0,
           },
         });
@@ -474,11 +492,11 @@
         userModel = viewer.entities.add({
           position : Cesium.Cartesian3.fromDegrees(userLocation.lon, userLocation.lat),
           billboard : {
-            image : 'red-circle.png',
+            image : 'images/red-circle.png',
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
             heightReference : Cesium.HeightReference.RELATIVE_TO_GROUND,
-            width : 64,
-            height : 64
+            width : 30,
+            height : 30
           },
           show: true
         });
@@ -502,11 +520,11 @@
             destination: Cesium.Cartesian3.fromDegrees(
               userLocation.lon,
               userLocation.lat,
-              2000
+              5000
             ),
             orientation: {
               heading: 0.0,
-              pitch: -Cesium.Math.PI_OVER_TWO,
+              pitch: -1.45,
               roll: 0.0,
             },
           });
@@ -546,11 +564,11 @@
             destination: Cesium.Cartesian3.fromDegrees(
               userLocation.lon,
               userLocation.lat,
-              2000
+              5000
             ),
             orientation: {
               heading: 0.0,
-              pitch: -Cesium.Math.PI_OVER_TWO,
+              pitch: -1.45,
               roll: 0.0,
             },
           });
@@ -558,53 +576,57 @@
       };
 
       function getRouteToDestination(){
-        document.getElementById('selectDestDiv').style.display = 'none';
-        if(h2 !== undefined){
-          h2 = h2 && h2.destroy();
-        }
-        document.getElementById('drawRouteDiv').style.display = 'block';
-        let [status, routeline, routelength, duration, code] = getRoadRouteHere([userLocation.lat, userLocation.lon], [destLatLon.lat, destLatLon.lon]);
-        routeCode = code;
-        routeDuration = duration;
-        // console.log(routeline);
-				//routelength = routelength.toFixed(2);
-        if(status){
-          // Find min, max latitude and min, max longitude
-          minLat = routeline[0][0]; // South latitude
-          minLon = routeline[0][1]; // West longitude
-          maxLat = routeline[0][0]; // North latitude
-          maxLon = routeline[0][1]; // East longitude
-          lonLatArray = [];
-          for(i=0; i<routeline.length; i++){
-            lonLatArray.push(routeline[i][1], routeline[i][0]);
-            if(routeline[i][0] < minLat){
-              minLat = routeline[i][0];
-            }
-            if(routeline[i][1] < minLon){
-              minLon = routeline[i][1];
-            }
-            if(routeline[i][0] > maxLat){
-              maxLat = routeline[i][0];
-            }
-            if(routeline[i][1] > maxLon){
-              maxLon = routeline[i][1];
-            }
+        if(destPin === undefined){
+          alert('A destination must be selected');
+        }else{
+          document.getElementById('selectDestDiv').style.display = 'none';
+          if(h2 !== undefined){
+            h2 = h2 && h2.destroy();
           }
-          routePolyline.polyline.positions = Cesium.Cartesian3.fromDegreesArray(lonLatArray);
-          routePolyline.show = true;
-          routeCorridor.corridor.positions = Cesium.Cartesian3.fromDegreesArray(lonLatArray);
-          routeCorridor.show=true;
-        }
+          document.getElementById('drawRouteDiv').style.display = 'block';
+          let [status, routeline, routelength, duration, code] = getRoadRouteHere([userLocation.lat, userLocation.lon], [destLatLon.lat, destLatLon.lon]);
+          routeCode = code;
+          routeDuration = duration;
+          // console.log(routeline);
+          //routelength = routelength.toFixed(2);
+          if(status){
+            // Find min, max latitude and min, max longitude
+            minLat = routeline[0][0]; // South latitude
+            minLon = routeline[0][1]; // West longitude
+            maxLat = routeline[0][0]; // North latitude
+            maxLon = routeline[0][1]; // East longitude
+            lonLatArray = [];
+            for(i=0; i<routeline.length; i++){
+              lonLatArray.push(routeline[i][1], routeline[i][0]);
+              if(routeline[i][0] < minLat){
+                minLat = routeline[i][0];
+              }
+              if(routeline[i][1] < minLon){
+                minLon = routeline[i][1];
+              }
+              if(routeline[i][0] > maxLat){
+                maxLat = routeline[i][0];
+              }
+              if(routeline[i][1] > maxLon){
+                maxLon = routeline[i][1];
+              }
+            }
+            routePolyline.polyline.positions = Cesium.Cartesian3.fromDegreesArray(lonLatArray);
+            routePolyline.show = true;
+            routeCorridor.corridor.positions = Cesium.Cartesian3.fromDegreesArray(lonLatArray);
+            routeCorridor.show=true;
+          }
 
-        // bbox = viewer.entities.add({
-        //   name: 'bbox',
-        //   rectangle: {
-        //     coordinates: Cesium.Rectangle.fromDegrees(minLon,minLat,maxLon,maxLat),
-        //     material : Cesium.Color.DARKCYAN.withAlpha(0.7),
-        //     clampToGround: true,
-        //   },
-        //   show: true,
-        // });
+          // bbox = viewer.entities.add({
+          //   name: 'bbox',
+          //   rectangle: {
+          //     coordinates: Cesium.Rectangle.fromDegrees(minLon,minLat,maxLon,maxLat),
+          //     material : Cesium.Color.DARKCYAN.withAlpha(0.7),
+          //     clampToGround: true,
+          //   },
+          //   show: true,
+          // });
+        }
       };
 
       function updateCorrdior(){
@@ -672,7 +694,7 @@
                     verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
                     heightReference : Cesium.HeightReference.RELATIVE_TO_GROUND
                   },
-                  description: searchResults[id]['address'] + "<br>" + searchResults[id]['isOpen']+"</p><br><p id='newRouteDuration'></p>", //<button onClick = 'getNewRoute();'>select</button><p id='query+id'>" + 
+                  description: "<p id='infoBoxText'>" + "<strong id='durationDiff'></strong>" + searchResults[id]['address'] + "<br>" + searchResults[id]['isOpen'] + "</p>", //<button onClick = 'getNewRoute();'>select</button><p id='query+id'>" + 
                   show : true,
                   label: {
                     text: searchResults[id]['title'],
@@ -715,11 +737,15 @@
         }
         newRoutePolyline.polyline.positions = Cesium.Cartesian3.fromDegreesArray(lonLatArray);
         let diff = duration - routeDuration;
-        diff = (diff/60).toFixed(1);
+        diff = Math.round(diff/60);
         if(diff > 0){
-          document.getElementById('newRouteDuration').value = 'Added Duration: ' + diff + 'minutes';
+          document.getElementById('durationDiff').innerText = 'Added Duration: ' + diff + ' min';
+          // document.querySelector("div.cesium-infoBox-description strong[id='durationDiff']").innerText = 'Added Duration: ' + diff + 'minutes\n';
+          //document.getElementById('durationDiff').innerText = 'Added Duration: ' + diff + 'minutes\n';
         }else{
-          document.getElementById('newRouteDuration').value = 'Reduced Duration: ' + diff + 'minutes';
+          document.getElementById('durationDiff').innerText = 'Reduced Duration: ' + diff + ' min';
+          // document.querySelector("div.cesium-infoBox-description strong[id='durationDiff']").innerText = 'Reduced Duration: ' + diff + 'minutes\n';
+          // document.getElementById('durationDiff').innerText = 'Reduced Duration: ' + diff + 'minutes\n';
         }
         
         newRoutePolyline.show = true;
@@ -735,6 +761,7 @@
         hideSearchEntities(viewer.selectedEntity.name);
         viewer.selectedEntity = undefined;
         document.getElementById('selectIntermediateDiv').style.display = 'none'; 
+        routePolyline.show = false;
       }
 
       function hideSearchEntities(except){
