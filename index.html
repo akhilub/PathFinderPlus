@@ -424,7 +424,7 @@
           console.log(destLatLon);
           if(destPin === undefined){
             Cesium.when(
-              pinBuilder.fromUrl("images/checkered-flag.png", Cesium.Color.BLACK, 60),
+              pinBuilder.fromUrl("images/checkered-flag.png", Cesium.Color.ORANGERED, 60),
               function (canvas) {
                 destPin = viewer.entities.add({
                   name: "destination",
