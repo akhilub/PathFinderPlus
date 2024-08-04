@@ -1,5 +1,18 @@
-﻿# Search Enroute
+﻿# PathFinder Plus: Your Smart Route Companion
 
+## About 
+PathFinder Plus is an innovative web application that enhances your journey planning experience. It allows you to discover and explore points of interest along your route, making every trip more exciting and efficient. With PathFinder Plus, you can:
+
+1.Plan your route between two locations
+2.Search for specific places or amenities along your path
+3.Customize your search radius to find nearby attractions
+4.View detailed information about each point of interest
+5.Optimize your journey by including multiple stops
+6.Whether you're planning a road trip, looking for convenient pit stops, or exploring a new area, PathFinder Plus helps you make the most of your travels. Say goodbye to missed opportunities and hello to smarter, more enjoyable journeys!
+
+---
+
+## 
 This is an exercise/project for a data visualization and optimization. With the goal of learning how to visualize geospatial data with Cesium, this web application emulates a simplified routing application from start to destination, while also allowing the user to search for places near the route as an intermediate stop. The route is finalized once the user selects the intermediate waypoint they desire.
 
 
