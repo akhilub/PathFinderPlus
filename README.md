@@ -12,7 +12,7 @@ PathFinder Plus is an innovative web application that enhances your journey plan
 
 ---
 
-## 
+## Description
 This is an exercise/project for a data visualization and optimization. With the goal of learning how to visualize geospatial data with Cesium, this web application emulates a simplified routing application from start to destination, while also allowing the user to search for places near the route as an intermediate stop. The route is finalized once the user selects the intermediate waypoint they desire.
 
 
@@ -20,6 +20,8 @@ The web pages are all defined in `index.html`. For simplicity, I have implemente
 You may visit:
 
 https://search-enroute.vercel.app 
+
+---
 
 ## Storyboard
 
